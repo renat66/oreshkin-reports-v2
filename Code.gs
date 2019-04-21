@@ -1,43 +1,29 @@
+
 function createIndividualReports() {
     var ss = SpreadsheetApp.getActiveSpreadsheet();
-    var sheet = ss.getSheetByName("Заказы");;
-    var range = sheet.getRange("C2:C" + sheet.getLastRow())
-    var data = range.getValues();
+    var sheet = ss.getSheetByName("Заказы");
+    var lastRow = sheet.getLastRow();
+    var range = sheet.getRange("C2:C" + lastRow)
+    //var data = range.getValues();
 
     var ranges = range.getMergedRanges();
 
     var reOrdered = {}; //map
-    for (var i = 0; i < ranges.length; i++) {
-        var individualInfo = {};
-        var currrange = ranges[i];
+    reorderOverMerged(reOrderedMap, ranges, sheet);
 
-        var startRow = currrange.getRow();
-        var lastRow = currrange.getLastRow();
-        var column = currrange.getColumn();
-
-        var neededRange = sheet.getRange(startRow, 1, (lastRow - startRow) + 1, 10).getValues();
-        individualInfo.orderNum = neededRange[0][1];
-        individualInfo.name = neededRange[0][2];
-        individualInfo.phone = neededRange[0][3];
-        individualInfo.address = neededRange[0][4];
-        individualInfo.price = neededRange[0][6];
-
-        individualInfo.positions = [];
-        for (var k = 0; k <= (lastRow - startRow); k++) {
-            // var name = names[k];
-            var posWithAmt = {};
-            posWithAmt.position = neededRange[k][7];
-            posWithAmt.amt = neededRange[k][9];
-            individualInfo.positions[k] = posWithAmt;
+    var notMergedRanges = [];
+    for (var i = 1; i <= range.getLastRow() - 1; i++) { //C2
+        var ccc = range.getCell(i, 1);
+        if (ccc.isPartOfMerge()) {
+            continue;
         }
-
-
-        if (reOrdered[individualInfo.address] == null) {
-            reOrdered[individualInfo.address] = [];
-        }
-        var aggrByAdress = reOrdered[individualInfo.address];
-        aggrByAdress.push(individualInfo);
+        var cellRange = sheet.getRange(ccc.getRow(), ccc.getColumn());
+        notMergedRanges.push(cellRange);
     }
+    reorderOverMerged(reOrdered, notMergedRanges, sheet);
+
+
+
 
     var ss = SpreadsheetApp.openById("1RcNI5v_BOalBi8qckNPuLqS_A0cEgml276SPRAx5lj0");
     var templateSheet = ss.getSheetByName('template');
@@ -45,6 +31,9 @@ function createIndividualReports() {
     for (var key in reOrdered) {
         Logger.log("Started: " + key)
         var ordersForAdress = reOrdered[key];
+
+
+
 
         var outputSheet = createIndSheetGroup(key);
         if (outputSheet.getSheetByName("Sheet1") == null) {
@@ -69,9 +58,14 @@ function createIndividualReports() {
             indSheet.getRange("A4").setValue(orders.orderNum);
             indSheet.getRange("A5").setValue(orders.price);
 
+
             for (var r = 0; r < orders.positions.length; r++) {
-                indSheet.getRange(8 + r, 1).setValue(orders.positions[r].position);
-                indSheet.getRange(8 + r, 2).setValue(orders.positions[r].amt);
+                var posCell = indSheet.getRange(8 + r, 1);
+                posCell.setValue(orders.positions[r].position);
+                posCell.setBorder(true, true, true, true, false, false);
+                var amtCell = indSheet.getRange(8 + r, 2);
+                amtCell.setBorder(true, true, true, true, false, false);
+                amtCell.setValue(orders.positions[r].amt);
                 indSheet.insertRowBefore(8 + r + 1);
             }
 
@@ -80,6 +74,39 @@ function createIndividualReports() {
         Logger.log("Finished: " + key)
     }
 }
+
+function reorderOverMerged(reOrdered, ranges, sheet) {
+    for (var i = 0; i < ranges.length; i++) {
+        var individualInfo = {};
+        var currrange = ranges[i];
+
+        var startRow = currrange.getRow();
+        var lastRow = currrange.getLastRow();
+        var column = currrange.getColumn();
+
+        var neededRange = sheet.getRange(startRow, 1, (lastRow - startRow) + 1, 10).getValues();
+        individualInfo.orderNum = neededRange[0][1];
+        individualInfo.name = neededRange[0][2];
+        individualInfo.phone = neededRange[0][3];
+        individualInfo.address = neededRange[0][4];
+        individualInfo.price = neededRange[0][6];
+
+        individualInfo.positions = [];
+        for (var k = 0; k <= (lastRow - startRow); k++) {
+            var posWithAmt = {};
+            posWithAmt.position = neededRange[k][7];
+            posWithAmt.amt = neededRange[k][9];
+            individualInfo.positions[k] = posWithAmt;
+        }
+      
+        if (reOrdered[individualInfo.address] == null) {
+            reOrdered[individualInfo.address] = [];
+        }
+        var aggrByAdress = reOrdered[individualInfo.address];
+        aggrByAdress.push(individualInfo);
+    }
+}
+
 
 function getOutputFolder() {
     const rootFolderName = "oreshkin-ind";
