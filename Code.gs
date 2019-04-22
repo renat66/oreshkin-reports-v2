@@ -1,16 +1,19 @@
-
 function createIndividualReports() {
     var ss = SpreadsheetApp.getActiveSpreadsheet();
     var sheet = ss.getSheetByName("Заказы");
     var lastRow = sheet.getLastRow();
     var range = sheet.getRange("C2:C" + lastRow)
-    //var data = range.getValues();
 
     var ranges = range.getMergedRanges();
 
-    var reOrdered = {}; //map
-    reorderOverMerged(reOrderedMap, ranges, sheet);
 
+    console.log("Iterating over merged started")
+    var reOrdered = {}; //map
+    reorderOverMerged(reOrdered, ranges, sheet);
+    console.log("Iterating over merged finished")
+
+    //todo: not merged also!
+    console.log("Iterating over not-merged started")
     var notMergedRanges = [];
     for (var i = 1; i <= range.getLastRow() - 1; i++) { //C2
         var ccc = range.getCell(i, 1);
@@ -21,35 +24,37 @@ function createIndividualReports() {
         notMergedRanges.push(cellRange);
     }
     reorderOverMerged(reOrdered, notMergedRanges, sheet);
-
-
+    console.log("Iterating over not-merged finished")
 
 
     var ss = SpreadsheetApp.openById("1RcNI5v_BOalBi8qckNPuLqS_A0cEgml276SPRAx5lj0");
     var templateSheet = ss.getSheetByName('template');
 
     for (var key in reOrdered) {
-        Logger.log("Started: " + key)
+        console.log("Started: " + key)
         var ordersForAdress = reOrdered[key];
 
 
 
 
         var outputSheet = createIndSheetGroup(key);
-        if (outputSheet.getSheetByName("Sheet1") == null) {
-            Logger.log("Skippping: " + key);
-            continue;
-        }
+
         for (var indOrdIndex in ordersForAdress) {
-
             var orders = ordersForAdress[indOrdIndex];
-            var indSheet = templateSheet.copyTo(outputSheet)
-
             var sName = orders.name + " " + orders.orderNum;
             if (outputSheet.getSheetByName(sName) != null) {
-                Logger.log("Skippping sheet: " + sName);
+                console.log("Skippping: " + sName + " in " + key);
                 continue;
             }
+
+
+            var indSheet = templateSheet.copyTo(outputSheet)
+
+
+//            if (outputSheet.getSheetByName(sName) != null) {
+//                console.log("Skippping sheet: " + sName);
+//                continue;
+//            }
             indSheet.setName(sName);
 
             indSheet.getRange("A2").setValue(orders.address);
@@ -70,9 +75,13 @@ function createIndividualReports() {
             }
 
         }
-        outputSheet.deleteSheet(outputSheet.getSheetByName("Sheet1"));
-        Logger.log("Finished: " + key)
+        var toDelete = outputSheet.getSheetByName("Sheet1");
+        if (toDelete != null) {
+            outputSheet.deleteSheet(toDelete);
+        }
+        console.log("Finished: " + key)
     }
+    console.log("Finished ALL")
 }
 
 function reorderOverMerged(reOrdered, ranges, sheet) {
@@ -98,7 +107,7 @@ function reorderOverMerged(reOrdered, ranges, sheet) {
             posWithAmt.amt = neededRange[k][9];
             individualInfo.positions[k] = posWithAmt;
         }
-      
+
         if (reOrdered[individualInfo.address] == null) {
             reOrdered[individualInfo.address] = [];
         }
@@ -132,11 +141,11 @@ function createNextSheet(index) {
 }
 
 function createIndSheetGroup(address) {
-    var outputFolder = getOutputFolder();
     var filesWithSameName = DriveApp.getFilesByName(address);
     if (filesWithSameName.hasNext()) {
         return SpreadsheetApp.open(filesWithSameName.next());
     }
+    var outputFolder = getOutputFolder();
     var newSheet = SpreadsheetApp.create(address)
     var temp = DriveApp.getFileById(newSheet.getId());
     outputFolder.addFile(temp)
