@@ -6,13 +6,22 @@ function createIndividualReports() {
 
     var ranges = range.getMergedRanges();
 
-
-    console.log("Iterating over merged started")
     var reOrdered = {}; //map
+    console.log("Iterating over merged started")
     reorderOverMerged(reOrdered, ranges, sheet);
     console.log("Iterating over merged finished")
 
-    //todo: not merged also!
+
+    console.log("Iterating over not-merged started")
+    var notMergedRanges = getNotMergedRanges(range, sheet);
+    reorderOverMerged(reOrdered, notMergedRanges, sheet);
+    console.log("Iterating over not-merged finished")
+    createIndReportsFromInMemory(reOrdered);
+
+    console.log("Finished ALL")
+}
+
+function getNotMergedRanges(range, sheet) {
     console.log("Iterating over not-merged started")
     var notMergedRanges = [];
     for (var i = 1; i <= range.getLastRow() - 1; i++) { //C2
@@ -23,20 +32,16 @@ function createIndividualReports() {
         var cellRange = sheet.getRange(ccc.getRow(), ccc.getColumn());
         notMergedRanges.push(cellRange);
     }
-    reorderOverMerged(reOrdered, notMergedRanges, sheet);
-    console.log("Iterating over not-merged finished")
+    return notMergedRanges;
+}
 
-
+function createIndReportsFromInMemory(reOrdered) {
     var ss = SpreadsheetApp.openById("1RcNI5v_BOalBi8qckNPuLqS_A0cEgml276SPRAx5lj0");
     var templateSheet = ss.getSheetByName('template');
 
     for (var key in reOrdered) {
         console.log("Started: " + key)
         var ordersForAdress = reOrdered[key];
-
-
-
-
         var outputSheet = createIndSheetGroup(key);
 
         for (var indOrdIndex in ordersForAdress) {
@@ -47,14 +52,8 @@ function createIndividualReports() {
                 continue;
             }
 
-
             var indSheet = templateSheet.copyTo(outputSheet)
 
-
-//            if (outputSheet.getSheetByName(sName) != null) {
-//                console.log("Skippping sheet: " + sName);
-//                continue;
-//            }
             indSheet.setName(sName);
 
             indSheet.getRange("A2").setValue(orders.address);
@@ -62,7 +61,6 @@ function createIndividualReports() {
             //       indSheet.getRange("B5").setValue(orders[i].);//todo: phone
             indSheet.getRange("A4").setValue(orders.orderNum);
             indSheet.getRange("A5").setValue(orders.price);
-
 
             for (var r = 0; r < orders.positions.length; r++) {
                 var posCell = indSheet.getRange(8 + r, 1);
@@ -81,7 +79,6 @@ function createIndividualReports() {
         }
         console.log("Finished: " + key)
     }
-    console.log("Finished ALL")
 }
 
 function reorderOverMerged(reOrdered, ranges, sheet) {
