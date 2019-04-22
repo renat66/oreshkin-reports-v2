@@ -113,7 +113,6 @@ function reorderOverMerged(reOrdered, ranges, sheet) {
     }
 }
 
-
 function getOutputFolder() {
     const rootFolderName = "oreshkin-ind";
     var folder = DriveApp.getFoldersByName(rootFolderName);
@@ -125,16 +124,6 @@ function getOutputFolder() {
         Logger.log(rootFolderName + ' folder created');
         return folderNew;
     }
-}
-
-
-function createNextSheet(index) {
-    var outputFolder = getOutputFolder();
-    var newSheet = SpreadsheetApp.create("Individuals-" + index)
-    var temp = DriveApp.getFileById(newSheet.getId());
-    outputFolder.addFile(temp)
-    DriveApp.getRootFolder().removeFile(temp);
-    return newSheet;
 }
 
 function createIndSheetGroup(address) {
