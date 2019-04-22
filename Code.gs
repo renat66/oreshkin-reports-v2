@@ -42,7 +42,7 @@ function createIndReportsFromInMemory(reOrdered) {
     for (var key in reOrdered) {
         console.log("Started: " + key)
         var ordersForAdress = reOrdered[key];
-        var outputSheet = createIndSheetGroup(key);
+        var outputSheet = createIndSheetGroup("ind-"+key);
 
         for (var indOrdIndex in ordersForAdress) {
             var orders = ordersForAdress[indOrdIndex];
