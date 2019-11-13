@@ -42,7 +42,7 @@ function createIndReportsFromInMemory(reOrdered) {
     for (var key in reOrdered) {
         console.log("Started: " + key)
         var ordersForAdress = reOrdered[key];
-        var outputSheet = createIndSheetGroup("ind-"+key);
+        var outputSheet = createIndSheetGroup( "ind-"+key);
 
         for (var indOrdIndex in ordersForAdress) {
             var orders = ordersForAdress[indOrdIndex];
@@ -56,11 +56,11 @@ function createIndReportsFromInMemory(reOrdered) {
 
             indSheet.setName(sName);
 
-            indSheet.getRange("A2").setValue(orders.address);
-            indSheet.getRange("A3").setValue(orders.name + " (" + orders.phone + ")");
+            indSheet.getRange("A5").setValue(orders.address);
+            indSheet.getRange("A2").setValue(orders.name + " (" + orders.phone + ")");
             //       indSheet.getRange("B5").setValue(orders[i].);//todo: phone
-            indSheet.getRange("A4").setValue(orders.orderNum);
-            indSheet.getRange("A5").setValue(orders.price);
+            indSheet.getRange("A3").setValue(orders.orderNum);
+            indSheet.getRange("A4").setValue(orders.price);
 
             for (var r = 0; r < orders.positions.length; r++) {
                 var posCell = indSheet.getRange(8 + r, 1);
@@ -90,7 +90,7 @@ function reorderOverMerged(reOrdered, ranges, sheet) {
         var lastRow = currrange.getLastRow();
         var column = currrange.getColumn();
 
-        var neededRange = sheet.getRange(startRow, 1, (lastRow - startRow) + 1, 10).getValues();
+        var neededRange = sheet.getRange(startRow, 1, (lastRow - startRow) + 1, 11).getValues();
         individualInfo.orderNum = neededRange[0][1];
         individualInfo.name = neededRange[0][2];
         individualInfo.phone = neededRange[0][3];
@@ -101,7 +101,7 @@ function reorderOverMerged(reOrdered, ranges, sheet) {
         for (var k = 0; k <= (lastRow - startRow); k++) {
             var posWithAmt = {};
             posWithAmt.position = neededRange[k][7];
-            posWithAmt.amt = neededRange[k][9];
+            posWithAmt.amt = neededRange[k][10];
             individualInfo.positions[k] = posWithAmt;
         }
 
