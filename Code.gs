@@ -138,3 +138,157 @@ function createIndSheetGroup(address) {
     DriveApp.getRootFolder().removeFile(temp);
     return newSheet;
 }
+function dumpJson() {
+  	console.log("Scrtipt has started") 
+	var ss = SpreadsheetApp.getActiveSpreadsheet();
+	var sheet = ss.getSheetByName("Заказы");
+	var lastRow = sheet.getLastRow();
+	var range = sheet.getRange("B2:B" + lastRow);
+
+
+    var documentProperties = PropertiesService.getDocumentProperties();
+    { //unmerged rows
+		var notMergedRanges = [];
+		var lastProcessedRow = documentProperties.getProperty("lastProcessedRowS");
+		if (lastProcessedRow == null) {
+			lastProcessedRow = 1;
+			console.log("Starting unmerged rows from beginning")
+		} else {
+			console.log("recovering from unmerged row " + lastProcessedRow)
+		}
+		for (var i = lastProcessedRow; i <= range.getLastRow() - 1; i++) { //C2
+			var ccc = range.getCell(i, 1);
+			if (ccc.isPartOfMerge()) {
+              documentProperties.setProperty("lastProcessedRowS", i);		
+              continue;
+			}
+			var cellRange = sheet.getRange(ccc.getRow(), ccc.getColumn());
+			precessOneNotMergedRow(sheet, cellRange);
+			documentProperties.setProperty("lastProcessedRowS", i)
+		}
+	}
+
+	//merged
+	{
+		console.log("Starting merged rows")
+		var mergedRanges = range.getMergedRanges();
+            
+      //documentProperties.deleteProperty("lastProcessedRowM")//todo: deltee
+      var lastProcessedRow = documentProperties.getProperty("lastProcessedRowM");
+
+      
+		if (lastProcessedRow == null) {
+			lastProcessedRow = 0;
+			console.log("Starting merged rows from beginning")
+		} else {
+			console.log("recovering from merged row " + lastProcessedRow)
+		}
+   
+
+		for (var i = lastProcessedRow; i < mergedRanges.length; i++) {
+			var individualInfo = {};
+			var currrange = mergedRanges[Number(i)];
+    
+
+			var startRow = currrange.getRow();
+			var lastRow = currrange.getLastRow();
+			var column = currrange.getColumn();
+
+			var neededRange = sheet.getRange(startRow, 1, (lastRow - startRow) + 1, 11).getValues();
+			individualInfo.orderNum = neededRange[0][1].substring(1);
+			individualInfo.name = neededRange[0][2];
+			individualInfo.phone = neededRange[0][3];
+			individualInfo.address = neededRange[0][4];
+			individualInfo.price = neededRange[0][6];
+
+			individualInfo.positions = [];
+			for (var k = 0; k <= (lastRow - startRow); k++) {
+				var posWithAmt = {};
+				posWithAmt.position = neededRange[k][7];
+				posWithAmt.amt = neededRange[k][10];
+				individualInfo.positions[k] = posWithAmt;
+			}
+
+			var jsoned = JSON.stringify(individualInfo, null, 4);
+			var fileName = individualInfo.orderNum + ".json";
+			console.log("File M1 " + fileName + " created")
+
+			createOrAppendFile(individualInfo.orderNum + ".json", jsoned)
+			documentProperties.setProperty("lastProcessedRowM", (i+0))
+		}
+      console.log("Processing merged finished")
+	}
+
+}
+
+
+function precessOneNotMergedRow(sheet, notMergedRange) {
+	var documentProperties = PropertiesService.getDocumentProperties();
+	var individualInfo = {};
+	var currrange = notMergedRange;
+
+	var startRow = currrange.getRow();
+	var lastRow = currrange.getLastRow();
+	var column = currrange.getColumn();
+
+	var neededRange = sheet.getRange(startRow, 1, (lastRow - startRow) + 1, 11).getValues();
+	individualInfo.orderNum = neededRange[0][1].substring(1);
+
+	if (documentProperties.getProperty(individualInfo.orderNum) != null) {
+		console.log("skipping 1 " + individualInfo.orderNum);
+		return;
+	} else {
+		documentProperties.setProperty(individualInfo.orderNum, "");
+	}
+
+	individualInfo.name = neededRange[0][2];
+	individualInfo.phone = "" + neededRange[0][3];
+	individualInfo.address = neededRange[0][4];
+	individualInfo.price = neededRange[0][6];
+
+	individualInfo.positions = [];
+	for (var k = 0; k <= (lastRow - startRow); k++) {
+		var posWithAmt = {};
+		posWithAmt.position = neededRange[k][7];
+		posWithAmt.amt = neededRange[k][10];
+		individualInfo.positions[k] = posWithAmt;
+	}
+	var jsoned = JSON.stringify(individualInfo, null, 4);
+	var fileName = individualInfo.orderNum + ".json";
+	console.log("File S1 " + fileName + " created")
+
+	createOrAppendFile(individualInfo.orderNum + ".json", jsoned)
+}
+
+function createOrAppendFile(fileName, content) {
+	var folderName = "jsons";
+
+	// get list of folders with matching name
+	var folderList = DriveApp.getFoldersByName(folderName);
+	if (folderList.hasNext()) {
+		// found matching folder
+		var folder = folderList.next();
+
+		// search for files with matching name
+		var fileList = folder.getFilesByName(fileName);
+
+		if (fileList.hasNext()) {
+			// found matching file - append text
+			var file = fileList.next();
+			//file.setContent(content);
+		} else {
+			// file not found - create new
+			folder.createFile(fileName, content);
+		}
+	}
+}
+
+function clearProps() {
+	var documentProperties = PropertiesService.getDocumentProperties();
+	documentProperties.deleteAllProperties();
+}
+
+function getProps() {
+	var documentProperties = PropertiesService.getDocumentProperties();
+	return documentProperties.getKeys();
+}
